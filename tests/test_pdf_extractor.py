@@ -1,22 +1,8 @@
 """Tests for parser.pdf_extractor module."""
 
-import os
-import pytest
 import pandas as pd
 
 from parser.pdf_extractor import extract_tables, extract_text_by_section
-
-SAMPLE_PDF = os.path.join(
-    os.path.dirname(__file__), os.pardir, "data", "sample.pdf"
-)
-
-
-@pytest.fixture
-def sample_pdf_path():
-    path = os.path.normpath(SAMPLE_PDF)
-    if not os.path.isfile(path):
-        pytest.skip("data/sample.pdf not found — skipping PDF tests")
-    return path
 
 
 class TestExtractTables:
