@@ -58,16 +58,38 @@ def clean_financial_table(df: pd.DataFrame) -> pd.DataFrame:
     4. Drop rows where all numeric columns are None.
     5. Reset index.
     """
-    # 1. Drop columns with empty-string names
-    df = df.loc[:, df.columns[df.columns != ""]].copy()
+    # 1. Drop columns with empty-string names or None
+    valid_cols = [c for c in df.columns if c is not None and str(c).strip() != ""]
+    df = df[valid_cols].copy()
+
+    # Deduplicate column names (PDF tables often have duplicate headers)
+    seen: dict[str, int] = {}
+    new_cols = []
+    for c in df.columns:
+        name = str(c)
+        if name in seen:
+            seen[name] += 1
+            new_cols.append(f"{name}_{seen[name]}")
+        else:
+            seen[name] = 0
+            new_cols.append(name)
+    df.columns = new_cols
 
     # 2. Identify columns
     item_col = df.columns[0]
-    numeric_cols = df.columns[1:]
+    numeric_cols = list(df.columns[1:])
 
     # 3. Convert numeric columns
+    def _safe_parse(v):
+        if v is None:
+            return None
+        s = str(v).strip()
+        if s == "" or s == "nan" or s == "None":
+            return None
+        return parse_number(s)
+
     for col in numeric_cols:
-        df[col] = df[col].apply(lambda v: parse_number(str(v)) if pd.notna(v) else None)
+        df[col] = df[col].apply(_safe_parse)
 
     # 4. Drop rows where every numeric column is None
     df = df.dropna(subset=numeric_cols, how="all")
